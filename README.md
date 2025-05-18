@@ -11,43 +11,6 @@ Este script Bash permite **baixar um trecho específico de um vídeo do YouTube*
 
 ---
 
-## 🛠️ Requisitos e Instalação
-
-### 1. Instalar dependências
-
-Este script requer duas ferramentas:
-
-- [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) – para baixar vídeos do YouTube.
-- [`ffmpeg`](https://ffmpeg.org/) – para processar os arquivos de vídeo e áudio.
-
-#### 💻 No macOS (via Homebrew):
-
-```bash
-brew install yt-dlp ffmpeg
-```
-
-#### 🐧 No Linux (Debian/Ubuntu):
-
-```bash
-sudo apt update
-sudo apt install yt-dlp ffmpeg
-```
-
-#### 🪟 No Windows:
-
-```
-- Instale o Git Bash ou use o WSL (subsistema Linux do Windows).
-- Baixe e adicione yt-dlp e ffmpeg ao PATH.
-- https://github.com/yt-dlp/yt-dlp/releases
-- https://ffmpeg.org/download.html
-```
-
-#### 👾 Clonar o repositório ou baixar o script
-
-```bash
-git clone https://github.com/markssants/cortar-youtube.git
-```
-
 # 💡 Como Usar
 
 Dê permissão de execução ao script
@@ -101,3 +64,42 @@ O script já remove o arquivo temporário baixado, mantendo apenas o clipe final
     - Suporte a múltiplos trechos (batch)
     - Permitir que o usuário forneça vários tempos de início/fim e o script baixe todos de uma vez.
     - Barra de progresso amigável (tqdm ou rich) Para mostrar o andamento do download/corte.
+
+---
+
+## 🛠️ Requisitos e Instalação
+
+### 1. Instalar dependências
+
+Este script requer duas ferramentas:
+
+- [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) – para baixar vídeos do YouTube.
+- [`ffmpeg`](https://ffmpeg.org/) – para processar os arquivos de vídeo e áudio.
+
+#### 💻 No macOS (via Homebrew):
+
+```bash
+brew install yt-dlp ffmpeg
+```
+
+#### 🐧 No Linux (Debian/Ubuntu):
+
+```bash
+sudo apt update
+sudo apt install yt-dlp ffmpeg
+```
+
+#### 🪟 No Windows:
+
+```
+- Instale o Git Bash ou use o WSL (subsistema Linux do Windows).
+- Baixe e adicione yt-dlp e ffmpeg ao PATH.
+- https://github.com/yt-dlp/yt-dlp/releases
+- https://ffmpeg.org/download.html
+```
+
+## 👾 Clonar o repositório ou baixar o script
+
+```bash
+git clone https://github.com/markssants/cortar-youtube.git
+```
