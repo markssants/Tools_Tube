@@ -362,11 +362,11 @@ process_multiple_videos() {
   echo -e "\n${BOLD_YELLOW}🎬  Modo: Baixar múltiplos vídeos${NC}"
   local num_videos_requested
   while true; do
-    read -p "$(echo -e "  ${BOLD_CYAN}🔢 Quantos vídeos deseja baixar (1-10)? ${NC}")" num_videos_requested
-    if [[ "$num_videos_requested" =~ ^[1-9]$|^10$ ]]; then
+    read -p "$(echo -e "  ${BOLD_CYAN}🔢 Quantos vídeos deseja baixar (1-99)? ${NC}")" num_videos_requested
+    if [[ "$num_videos_requested" =~ ^[1-9]$|^[1-9][0-9]$ ]]; then # Permite de 1 a 99
       break
     else
-      echo -e "  ${BOLD_RED}❌ Número inválido. Por favor, insira um número entre 1 e 10.${NC}"
+      echo -e "  ${BOLD_RED}❌ Número inválido. Por favor, insira um número entre 1 e 99.${NC}"
     fi
   done
 
@@ -458,21 +458,131 @@ process_playlist() {
     return 1
   fi
 
+
+  local download_type_choice
+  local file_extension
+  local yt_dlp_extra_args=() # Array para argumentos de formato do yt-dlp
+
+  echo
+  echo -e "  ${BOLD_CYAN}❓ Como deseja baixar a playlist?${NC}"
+  echo -e "    ${BOLD_CYAN}(${NC}${BOLD_GREEN}v${NC}${BOLD_CYAN}) Como ${BOLD_WHITE}Vídeo${NC} (arquivos .mp4)"
+  echo -e "    ${BOLD_CYAN}(${NC}${BOLD_RED}m${NC}${BOLD_CYAN}) Como ${BOLD_WHITE}Música${NC} (arquivos .mp3)"
+  read -p "$(echo -e "  ${BOLD_LIGHT_BLUE}👉 Escolha uma opção [${NC}${BOLD_GREEN}v${NC}${BOLD_LIGHT_BLUE}]: ${NC}")" download_type_choice
+  download_type_choice=$(echo "$download_type_choice" | tr '[:upper:]' '[:lower:]')
+
+  if [[ "$download_type_choice" == "m" ]]; then
+    file_extension="mp3"
+    yt_dlp_extra_args=(-x --audio-format mp3)
+    echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  A playlist será baixada como MÚSICA (.${file_extension}).${NC}"
+  else
+    file_extension="mp4"
+    yt_dlp_extra_args=(-f "bv*[ext=mp4][vcodec^=avc1]+ba[ext=m4a][acodec^=mp4a]/mp4")
+    echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  A playlist será baixada como VÍDEO (.${file_extension}).${NC}"
+  fi
+
+  echo
+  echo -e "  ${BOLD_LIGHT_BLUE}🔎 Verificando informações da playlist...${NC}"
+  local playlist_item_count
+  # Tenta obter a contagem direta da playlist primeiro
+  playlist_item_count_raw=$(yt-dlp --print "%(playlist_count)s" --flat-playlist "$playlist_url" 2>/dev/null | head -n 1)
+
+  # Fallback: conta os itens pelo índice se playlist_count não estiver disponível, for zero ou "NA"
+  if [[ -z "$playlist_item_count_raw" || "$playlist_item_count_raw" == "0" || "$playlist_item_count_raw" == "NA" ]]; then
+    playlist_item_count=$(yt-dlp --flat-playlist --print "%(playlist_index)s" "$playlist_url" 2>/dev/null | wc -l | awk '{print $1}')
+  else
+    playlist_item_count="$playlist_item_count_raw"
+  fi
+
+  if [[ "$playlist_item_count" =~ ^[1-9][0-9]*$ && "$playlist_item_count" -gt 0 ]]; then
+    echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  Esta playlist contém ${BOLD_YELLOW}$playlist_item_count${NC} vídeos (do ${BOLD_YELLOW}1${NC} ao ${BOLD_YELLOW}$playlist_item_count${NC}).${NC}"
+  else
+    echo -e "  ${BOLD_YELLOW}⚠️ Não foi possível determinar o número exato de vídeos na playlist. A seleção de intervalo pode não ser validada contra um total.${NC}"
+    playlist_item_count="" # Limpa para não usar em validações se for inválido
+  fi
+
+  # Opção para visualizar os nomes dos vídeos
+  if [[ -n "$playlist_item_count" && "$playlist_item_count" -gt 0 ]]; then # Só oferece se a contagem for válida
+    # Mostra a lista de títulos automaticamente
+    echo -e "  ${BOLD_LIGHT_BLUE}📄 Lista de títulos dos vídeos da playlist:${NC}"
+      local video_list_for_view
+      # Usamos --print para obter índice e título. Redirecionamos stderr para /dev/null para suprimir mensagens do yt-dlp.
+      video_list_for_view=$(yt-dlp --flat-playlist --print "%(playlist_index)s. %(title)s" "$playlist_url" 2>/dev/null)
+      if [[ -n "$video_list_for_view" ]]; then
+        echo -e "${BOLD_WHITE}-----------------------------------------------------${NC}"
+        # Exibe a lista. O usuário pode precisar rolar se for longa.
+        echo "$video_list_for_view"
+        echo -e "${BOLD_WHITE}-----------------------------------------------------${NC}"
+      else
+        echo -e "  ${BOLD_RED}❌ Não foi possível obter a lista de títulos.${NC}"
+      fi
+  elif [[ "$playlist_range_choice" == "e" && -z "$playlist_item_count" ]]; then # Se o usuário quer escolher intervalo mas não temos a contagem
+    playlist_item_count="" # Limpa para não usar em validações se for inválido
+  fi
+
+  local playlist_range_choice
+  local start_item end_item
+  local yt_dlp_playlist_items_args=() # Array para argumentos de --playlist-items
+
+  echo
+  echo -e "  ${BOLD_CYAN}❓ Deseja baixar a playlist inteira ou um intervalo específico?${NC}"
+  echo -e "    ${BOLD_CYAN}(${NC}${BOLD_GREEN}1${NC}${BOLD_CYAN}) ${BOLD_WHITE}Inteira${NC}"
+  echo -e "    ${BOLD_CYAN}(${NC}${BOLD_RED}2${NC}${BOLD_CYAN}) ${BOLD_WHITE}Escolher intervalo${NC} (ex: do vídeo 3 ao 10)"
+  read -p "$(echo -e "  ${BOLD_LIGHT_BLUE}👉 Escolha uma opção [${NC}${BOLD_GREEN}1${NC}${BOLD_LIGHT_BLUE}]: ${NC}")" playlist_range_choice
+  playlist_range_choice=$(echo "$playlist_range_choice" | tr '[:upper:]' '[:lower:]')
+
+  if [[ "$playlist_range_choice" == "2" ]]; then
+    while true; do
+      read -p "$(echo -e "    ${BOLD_CYAN}🔢 Vídeo inicial (número, ex: 1): ${NC}")" start_item
+      if [[ ! "$start_item" =~ ^[1-9][0-9]*$ ]]; then
+        echo -e "    ${BOLD_RED}❌ Número inicial inválido. Tente novamente.${NC}"
+      elif [[ -n "$playlist_item_count" && "$start_item" -gt "$playlist_item_count" ]]; then
+        echo -e "    ${BOLD_RED}❌ Número inicial não pode ser maior que o total de vídeos (${playlist_item_count}). Tente novamente.${NC}"
+      else
+        break
+      fi
+    done
+    while true; do
+      read -p "$(echo -e "    ${BOLD_CYAN}🔢 Vídeo final (número, ex: 10, Enter para ir até o fim desde o inicial): ${NC}")" end_item
+      if [[ -z "$end_item" ]]; then # Usuário pressionou Enter
+        break
+      elif [[ ! "$end_item" =~ ^[1-9][0-9]*$ ]]; then
+        echo -e "    ${BOLD_RED}❌ Número final inválido. Tente novamente.${NC}"
+      elif [[ "$end_item" -lt "$start_item" ]]; then
+        echo -e "    ${BOLD_RED}❌ Número final não pode ser menor que o inicial (${start_item}). Tente novamente.${NC}"
+      elif [[ -n "$playlist_item_count" && "$end_item" -gt "$playlist_item_count" ]]; then
+        echo -e "    ${BOLD_RED}❌ Número final não pode ser maior que o total de vídeos (${playlist_item_count}). Tente novamente.${NC}"
+      else
+        break
+      fi
+    done
+
+
+
+    if [[ -n "$start_item" && -n "$end_item" ]]; then
+      yt_dlp_playlist_items_args+=(--playlist-items "${start_item}-${end_item}")
+      echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  Serão baixados os itens da playlist de ${BOLD_YELLOW}$start_item${NC} até ${BOLD_YELLOW}$end_item${NC}.${NC}"
+    elif [[ -n "$start_item" ]]; then
+      yt_dlp_playlist_items_args+=(--playlist-items "${start_item}-")
+      echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  Serão baixados os itens da playlist a partir do ${BOLD_YELLOW}$start_item${NC} até o final.${NC}"
+    fi
+  else
+    echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  A playlist será baixada ${BOLD_WHITE}inteira${NC}.${NC}"
+  fi
+
   echo
   echo -e "${BOLD_CYAN}🏷️  Como deseja nomear os arquivos da playlist?${NC}"
-  echo -e "   ${BOLD_CYAN}1.${NC} ${BOLD_WHITE}Padrão (Ex: ${NC}${BOLD_YELLOW}01 - Título Original.mp4${NC}${BOLD_WHITE})${NC}"
-  echo -e "   ${BOLD_CYAN}2.${NC} ${BOLD_WHITE}Apenas Título Original (Ex: ${NC}${BOLD_YELLOW}Título Original.mp4${NC}${BOLD_WHITE})${NC}"
-  echo -e "   ${BOLD_CYAN}3.${NC} ${BOLD_WHITE}Prefixo Personalizado + Índice (Ex: ${NC}${BOLD_YELLOW}MinhaSerie_01.mp4${NC}${BOLD_WHITE})${NC}"
+  echo -e "   ${BOLD_CYAN}1.${NC} ${BOLD_WHITE}Padrão (Ex: ${NC}${BOLD_YELLOW}01 - Título Original.${file_extension}${NC}${BOLD_WHITE})${NC}"
+  echo -e "   ${BOLD_CYAN}2.${NC} ${BOLD_WHITE}Apenas Título Original (Ex: ${NC}${BOLD_YELLOW}Título Original.${file_extension}${NC}${BOLD_WHITE})${NC}"
+  echo -e "   ${BOLD_CYAN}3.${NC} ${BOLD_WHITE}Prefixo Personalizado + Índice (Ex: ${NC}${BOLD_YELLOW}MinhaSerie_01.${file_extension}${NC}${BOLD_WHITE})${NC}"
   echo -e "   ${BOLD_CYAN}4.${NC} ${BOLD_WHITE}Renomear cada vídeo individualmente (Interativo)${NC}"
   read -p "$(echo -e "${BOLD_LIGHT_BLUE}👉 Escolha uma opção [1]: ${NC}")" naming_choice_playlist
 
   local output_template
   local success_playlist_download=0 # 0 for success, 1 for failure
-
   case "$naming_choice_playlist" in
     2)
-      output_template="${diretorio_saida}/%(_sanitize_playlist_filename(title))s.%(ext)s"
-      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist de ${playlist_url} usando TÍTULOS ORIGINAIS...${NC}"
+      output_template="${diretorio_saida}/%(title)s.%(ext)s" # yt-dlp sanitizes title
+      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist (${file_extension}) de ${playlist_url} usando TÍTULOS ORIGINAIS...${NC}"
       ;;
     3)
       local custom_prefix
@@ -483,14 +593,14 @@ process_playlist() {
         custom_prefix="video_"
       fi
       output_template="${diretorio_saida}/${custom_prefix}%(playlist_index)s.%(ext)s"
-      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist de ${playlist_url} usando prefixo '${custom_prefix}' e índice...${NC}"
+      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist (${file_extension}) de ${playlist_url} usando prefixo '${custom_prefix}' e índice...${NC}"
       ;;
     4)
       echo -e "\n${BOLD_GREEN}🛠️  Modo de renomeação individual...${NC}"
       echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  Obtendo lista de vídeos da playlist...${NC}"
       # Get video IDs and titles, using a very unlikely separator
       local video_infos_raw
-      video_infos_raw=$(yt-dlp --flat-playlist --print "%(id)s::::%(title)s" "$playlist_url" 2>/dev/null)
+      video_infos_raw=$(yt-dlp --flat-playlist "${yt_dlp_playlist_items_args[@]}" --print "%(id)s::::%(title)s" "$playlist_url" 2>/dev/null)
 
       if [[ -z "$video_infos_raw" ]]; then
         echo -e "  ${BOLD_RED}❌ Não foi possível obter os itens da playlist. Verifique a URL ou a conexão.${NC}"
@@ -528,8 +638,8 @@ process_playlist() {
           local final_output_path="${diretorio_saida}/${custom_name_no_ext}.%(ext)s"
           local video_full_url="https://www.youtube.com/watch?v=${video_id}"
 
-          echo -e "  ${BOLD_GREEN}🔽 Baixando '${original_title}' para '${custom_name_no_ext}.mp4'...${NC}"
-          if ! yt-dlp --progress -f "bv*[ext=mp4][vcodec^=avc1]+ba[ext=m4a][acodec^=mp4a]/mp4" -o "$final_output_path" "$video_full_url"; then
+          echo -e "  ${BOLD_GREEN}🔽 Baixando '${original_title}' para '${custom_name_no_ext}.${file_extension}'...${NC}"
+          if ! yt-dlp --progress "${yt_dlp_extra_args[@]}" -o "$final_output_path" "$video_full_url"; then
             echo -e "    ${BOLD_RED}❌ Erro ao baixar o vídeo: $original_title${NC}"
             all_individual_downloads_successful=false
           else
@@ -544,15 +654,15 @@ process_playlist() {
       fi
       ;;
     1|*) # Padrão (Índice - Título Original) ou qualquer outra entrada
-      output_template="${diretorio_saida}/%(playlist_index)s - $(_sanitize_playlist_filename '%(title)s').%(ext)s"
-      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist de ${playlist_url} usando PADRÃO (Índice - Título)...${NC}"
+      output_template="${diretorio_saida}/%(playlist_index)s - %(title)s.%(ext)s" # yt-dlp sanitizes title
+      echo -e "\n${BOLD_GREEN}🔽  Baixando playlist (${file_extension}) de ${playlist_url} usando PADRÃO (Índice - Título)...${NC}"
       ;;
   esac
 
   if [[ "$naming_choice_playlist" != "4" ]]; then # Se não for renomeação individual, baixa a playlist de uma vez
     echo -e "  ${BOLD_LIGHT_BLUE}ℹ️  Os vídeos serão salvos em: ${BOLD_YELLOW}$(realpath "$diretorio_saida")${NC}"
-    if yt-dlp --progress --yes-playlist -o "$output_template" -f "bv*[ext=mp4][vcodec^=avc1]+ba[ext=m4a][acodec^=mp4a]/mp4" "$playlist_url"; then
-      echo -e "  ${BOLD_GREEN}✅ Download da playlist concluído (ou tentado).${NC}"
+    if yt-dlp --progress --yes-playlist "${yt_dlp_playlist_items_args[@]}" "${yt_dlp_extra_args[@]}" -o "$output_template" "$playlist_url"; then
+      echo -e "  ${BOLD_GREEN}✅ Download da playlist (${file_extension}) concluído (ou tentado).${NC}"
     else
       echo -e "  ${BOLD_RED}❌ Erro durante o download da playlist.${NC}"
       success_playlist_download=1
@@ -625,7 +735,7 @@ while true; do
   echo
   echo -e "   ${BOLD_CYAN}2.${NC} ${BOLD_WHITE}Baixar vários vídeos ${BOLD_GREEN}(sequencialmente)${NC}"
   echo
-  echo -e "   ${BOLD_CYAN}3.${NC} ${BOLD_WHITE}Baixar ${BOLD_GREEN}playlist ${BOLD_WHITE}inteira${NC}"
+  echo -e "   ${BOLD_CYAN}3.${NC} ${BOLD_WHITE}Baixar ${BOLD_GREEN}playlist${NC}"
   echo
   echo -e "   ${BOLD_CYAN}4.${NC} ${BOLD_WHITE}Baixar música ${BOLD_GREEN}(converter vídeo para MP3)${NC}"
   echo
