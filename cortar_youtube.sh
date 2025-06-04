@@ -10,7 +10,7 @@ BOLD_WHITE='\033[1;97m' # Branco brilhante em negrito
 NC='\033[0m' # No Color
 
 # Título do Script
-SCRIPT_TITLE_LINE="${BOLD_RED}✂️   ${NC}${BOLD_YELLOW}Script${NC} ${BOLD_RED}YouTube ✂️${NC}"
+SCRIPT_TITLE_LINE="${BOLD_RED}✂️   ${NC}${BOLD_YELLOW}Tools${NC} ${BOLD_RED}Tube ✂️${NC}"
 
 # Função para limpar a tela e mostrar o título
 clear_and_show_title() {
