@@ -1,6 +1,6 @@
 # 🎬 Tools Tube ✂️
 
-**Tools Tube** é uma poderosa ferramenta de terminal que facilita o download de vídeos e músicas do YouTube com diversas opções — como corte de trechos, playlists, múltiplos vídeos e extração de áudio em MP3.
+**Tools Tube** é uma poderosa ferramenta de terminal que facilita o download de vídeos e músicas do YouTube com diversas opções — como Marca trechos de vídeos no YouTube e baixa de forma prática já recortado ou baixa os vídeos completos, playlists, múltiplos vídeos e extração de áudio em MP3.
 
 ---
 
