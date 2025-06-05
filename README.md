@@ -12,8 +12,11 @@
 - 🎬 Download de múltiplos vídeos/músicas de uma vez com nomes automáticos ou manuais
   
 - 📃 Baixar playlists completas ou trechos específicos (Vídeo ou Música)
+  
 - 🎧 Extrair áudio (🎶 MP3) diretamente de vídeos
+  
 - 🍎 Interface com seleção de diretório via Finder (macOS)
+  
 - 📁 Escolha automática ou manual do diretório de saída
 
 ---
