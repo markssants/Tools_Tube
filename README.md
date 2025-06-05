@@ -1,22 +1,24 @@
 # 🎬 Tools Tube ✂️
 
-**Tools Tube** é um script Bash interativo para macOS que facilita o download de vídeos e músicas do YouTube com diversas opções — como corte de trechos, playlists, múltiplos vídeos e extração de áudio em MP3.
+**Tools Tube** é uma poderosa ferramenta de terminal que facilita o download de vídeos e músicas do YouTube com diversas opções — como corte de trechos, playlists, múltiplos vídeos e extração de áudio em MP3.
 
 ---
 
 
 ## 🚀 Funcionalidades
 
-- Baixa diretamente um trecho específico do YouTube (entre dois tempos).
-- Suporte a codecs compatíveis com edição (AVC1 + MP4A).
-- Permite personalizar o nome e o diretório de saída.
-- Interface amigável via terminal.
+- 📥 Baixar vídeos/músicas inteiros ou trechos definidos ✂️ (início e fim personalizados) ✂️
+- 🎬 Download de múltiplos vídeos/músicas de uma vez com nomes automáticos ou manuais
+- 📃 Baixar playlists completas ou trechos específicos (Vídeo ou Música)
+- 🎧 Extrair áudio (🎶 MP3) diretamente de vídeos
+- 🍎 Interface com seleção de diretório via Finder (macOS)
+- 📁 Escolha automática ou manual do diretório de saída
 
 ---
 
 # 💡 Como Usar
 
-Dê permissão de execução ao script
+Torne o script executável
 
 ```bash
 chmod +x cortar_youtube.sh
@@ -42,35 +44,9 @@ Nome do arquivo de saída (sem .mp4)
 Diretório onde deseja salvar (pressione Enter para usar o atual)
 ```
 
-### 🧪 Exemplo
-
-```
-URL do vídeo do YouTube: https://youtube.com/watch?v=abc123
-Início do clipe (formato HH:MM:SS): 00:01:00
-Fim do clipe (formato HH:MM:SS): 00:02:00
-Nome do arquivo de saída (sem extensão): meu_clipe
-Diretório para salvar o vídeo: ~/Videos
-✅ Clipe salvo como: ~/Videos/meu_clipe.mp4
-```
-
-#### 📁 Estrutura de Saída
-
-- O vídeo cortado será salvo como NOME.mp4 no diretório indicado.
-- Um arquivo temporário é gerado e renomeado automaticamente.
-
-#### 🧼 Limpeza
-
-O script já remove o arquivo temporário baixado, mantendo apenas o clipe final com o nome desejado.
-
-### Também dá pra acrescentar:
-#### 🔧 Funcionalidades Técnicas
-    - Suporte a múltiplos trechos (batch)
-    - Permitir que o usuário forneça vários tempos de início/fim e o script baixe todos de uma vez.
-    - Barra de progresso amigável (tqdm ou rich) Para mostrar o andamento do download/corte.
-
 ---
 
-## 🛠️ Requisitos e Instalação
+## 📦 Requisitos e Instalação 🛠️
 
 ### 1. Instalar dependências
 
@@ -84,6 +60,7 @@ Este script requer duas ferramentas:
 ```bash
 brew install yt-dlp ffmpeg
 ```
+- Terminal com suporte a ANSI escape codes (para cores)
 
 #### 🐧 No Linux (Debian/Ubuntu):
 
@@ -105,4 +82,26 @@ sudo apt install yt-dlp ffmpeg
 
 ```bash
 git clone https://github.com/markssants/cortar-youtube.git
+```
+
+---
+
+## 🔧 Configuração
+
+O script salva o caminho padrão dos downloads em um arquivo `.cortar_youtube_default_dir` no mesmo diretório do script.
+
+Você pode:
+- Definir manualmente um novo diretório
+- Usar o Finder para escolher a pasta
+- Usar o diretório atual
+
+
+## 📂 Estrutura de Menu
+
+```
+1. Baixar 1 vídeo (com opções de corte)
+2. Baixar vários vídeos (sequencialmente)
+3. Baixar playlist (vídeo ou música)
+4. Baixar música (converter vídeo para MP3)
+5. Sair
 ```
