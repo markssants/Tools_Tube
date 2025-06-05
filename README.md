@@ -1,6 +1,9 @@
-# 🎬 Cortar Trecho de Vídeo do YouTube via Terminal
+# 🎬 Tools Tube ✂️
 
-Este script Bash permite **baixar um trecho específico de um vídeo do YouTube** usando `yt-dlp` e `ffmpeg`. Ideal para quem deseja extrair rapidamente uma parte de um vídeo sem precisar baixar tudo ou usar editores pesados.
+**Tools Tube** é um script Bash interativo para macOS que facilita o download de vídeos e músicas do YouTube com diversas opções — como corte de trechos, playlists, múltiplos vídeos e extração de áudio em MP3.
+
+---
+
 
 ## 🚀 Funcionalidades
 
